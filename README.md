@@ -47,7 +47,7 @@ I chose the classic star schema as a data model for our database.  We have a cen
 The ERD for the DB schema is shown below.  It is saved as ERD.xml for the [wwwsqldesigner](https://github.com/ondras/wwwsqldesigner).
 
 
-The data dictionary can be found in the data_dictionary.xlsx file, although it would be better to 
+The data dictionary can be found in the data_dictionary.xlsx file, although it would be better to have this 
 
 
 primary id key
@@ -103,3 +103,13 @@ I chose BigQuery because it makes sense for this context.  Our data is not that 
 https://blog.panoply.io/a-full-comparison-of-redshift-and-bigquery
 
 If we had a website we were integrating with the data (i.e. we want to serve personalized messages to visitors depending on their location and demographics, and store related data from web visits), then we might want to reconsider our DWH solution and maybe use RedShift for it's scalability and in-memory processing capabilities.  This would allow us to do things like heavy analysis of web logs, ML with SageMaker, 
+
+
+## Misc
+I used the [Visual Paradigm](https://www.visual-paradigm.com/download/) tool to convert my SQL CREATE statements (DDL statements) into an ERD.  At first I was manually creating the ERD with [wwwsqldesigner](https://github.com/ondras/wwwsqldesigner), but found it tedious to enter everythin by hand.
+
+
+
+## Instructions for running IaC (infrastructure as code)
+
+You first must set up a new user with administrative rights.  Go to the AWS console, then IAM, then Users, and create a new user with "AdministratorAccess".  There may be a way to do this with less than admin rights, however.  Then set the .cfg file from the starter .cfg is the repo.  After downloading the credentials for the admin role, set these as KEY and SECRET in the cfg file.  Then run `ipython` and `create_redshift_cluster.py`.  
