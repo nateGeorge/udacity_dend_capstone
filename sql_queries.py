@@ -20,7 +20,7 @@ moved_recently INT,
 average_yearly_electric_bill NUMERIC,
 average_yearly_kwh_used NUMERIC,
 installer_id INT,
-battery_system_fraction BOOLEAN,
+battery_system_fraction NUMERIC,
 mean_annual_feedin_tariff NUMERIC);
 """)
 
