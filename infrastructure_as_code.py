@@ -17,16 +17,19 @@ class redshift_creator:
     def __init__(self,
                 config_location='~/.aws_config/',
                 config_filename='solar_dwh.cfg',
+                connection_filename='solar_cluster.cfg',
                 s3_access=False
                 ):
         """
         config_location - string; location of config file
         config_filename - string; filename of config file
+        connection_filename - string; filename of config file with connection details
         s3_access - boolean; if True, allows S3 read access for Redshift cluster
             (e.g. for importing data)
         """
         self.config_location = config_location
         self.config_filename = config_filename
+        self.connection_filename = connection_filename
         self.s3_access = s3_access
         self.set_configs()
         self.create_api_connections()
@@ -111,9 +114,22 @@ class redshift_creator:
                       )['ResponseMetadata']['HTTPStatusCode']
 
 
+    def write_connection_cfg(self):
+        """
+        Writes config file which allows for connection to DB via psycopg2.
+        """
+        with open(self.connection_filename, 'w') as f:
+            f.write('[CLUSTER]\n')
+            f.write('HOST=' + self.DWH_ENDPOINT + '\n')
+            f.write('DB_NAME=' + self.DB_NAME + '\n')
+            f.write('DB_USER=' + self.DB_USER + '\n')
+            f.write('DB_PASSWORD=' + self.DB_PASSWORD + '\n')
+            f.write('DB_PORT=' + self.DB_PORT + '\n')
+
+
     def create_redshift_cluster(self):
         """
-        Creates Redshift cluster.
+        Creates Redshift cluster.  Writes new .cfg file with details for connecting via psycopg2.
         """
         iam_roles = []
         # get IAM ARN for creating cluster
@@ -178,11 +194,11 @@ class redshift_creator:
 
     def get_endpoint_and_arn(self):
         """
-        Get host address for DB and role ARN, necessary for 
+        Get host address for DB, necessary for connecting to DB.
+        The endpoint is the host address used for psycopg2.
         """
         properties = self.redshift.describe_clusters(ClusterIdentifier=self.DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
         self.DWH_ENDPOINT = properties['Endpoint']['Address']
-        self.DWH_ROLE_ARN = properties['IamRoles'][0]['IamRoleArn']
     
 
     def enable_connections(self, ip='0.0.0.0/0'):
@@ -191,7 +207,8 @@ class redshift_creator:
         ip - string; ip address to allow access from.  0.0.0.0/0 is all IPs.
         """
         try:
-            vpc = self.ec2.Vpc(id=myClusterProps['VpcId'])
+            properties = self.redshift.describe_clusters(ClusterIdentifier=self.DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
+            vpc = self.ec2.Vpc(id=properties['VpcId'])
             defaultSg = list(vpc.security_groups.all())[0]
             print(defaultSg)
             
