@@ -46,31 +46,38 @@ I chose the classic star schema as a data model for our database.  We have a cen
 
 The ERD for the DB schema is shown below.  It is saved as ERD.xml for the [wwwsqldesigner](https://github.com/ondras/wwwsqldesigner).
 
+![ERD](images/erd.png)
 
-The data dictionary can be found in the data_dictionary.xlsx file, although it would be better to have this 
+
+The data dictionary can be found in the data_dictionary.xlsx file.
 
 
-primary id key
+The central table is the solar_metrics table with columns:
+primary key id
 zip_code
 percent_qualified (percent of buildings qualified for solar installs) (sunroof)
 number_potential_panels (number of potential solar panels for the area) (sunroof)
 kw_median (kW of solar potential for the median building) (sunroof)
-potential installs (count_qualified - existing_installs_count) (sunroof)
-median income (ACS)
+potential_installs (count_qualified - existing_installs_count) (sunroof)
+median_income (ACS)
+median_age (ACS)
+occupied_housing_units (ACS)
+single_family_homes (ACS)
+collegiates (people with at least a bachelors degree) (ACS)
+moved_recently (different house a year ago) (ACS)
+owner_occupied_housing_units (ACS)
 average_electric_bill (EIA)
 average_kwh_used (EIA)
-median_age (ACS)
-owner_occupied_housing_units (ACS)
 installer_ID (majority installer for that location) (LBNL)
-battery_system (If the install has a battery system) (LBNL)
-median_annual_feedin_tariff (Feed-in Tariff (Annual Payment)) (LBNL)
+battery_system (If the install has a battery system, fraction of installs with battery) (LBNL)
+average_annual_feedin_tariff (Feed-in Tariff (Annual Payment)) (LBNL)
 
 
 The dimension tables include:
 
-location table: zipcode, city name, state name, latitude, longitude
-utility table: zipcode, utility name, ownership, service type
-installer table: installer ID, installer name, installer primary module manufacturer
+- location table: zipcode, city name, state name, latitude, longitude
+- utility table: zipcode, utility name, ownership, service type
+- installer table: installer ID, installer name, installer primary module manufacturer
 
 To expand, I would add another fact table (making the schema a galaxy schema) with installation data from the LBNL dataset.  This would enable looking at which areas have growing competition from other companies.  The table would have at least:
 - primary key id
@@ -83,7 +90,9 @@ To expand, I would add another fact table (making the schema a galaxy schema) wi
 - Installer ID
 
 Then we would also need another dimension table:
-module manufacturer table: manufacturer code, manufacturer name
+- module manufacturer table: manufacturer code, manufacturer name
+
+One further expansion of the database would be to include web log data from a solar installer website.  This would be things like data from the [fingerprintjs2](https://github.com/Valve/fingerprintjs2) JavaScript library (e.g. user agent), IP address and location, visit time, length of visit on site, and any 'conversion' metrics like did the user subscribe, ask for more information, or purchase something.  Then this web log data could be combined with the other data to understand how to best convert users on the site, and could be used with machine learning and backend coding to serve personalized content to users visiting the site.
 
 ## Data Pipeline
 
@@ -104,6 +113,18 @@ https://blog.panoply.io/a-full-comparison-of-redshift-and-bigquery
 
 If we had a website we were integrating with the data (i.e. we want to serve personalized messages to visitors depending on their location and demographics, and store related data from web visits), then we might want to reconsider our DWH solution and maybe use RedShift for it's scalability and in-memory processing capabilities.  This would allow us to do things like heavy analysis of web logs, ML with SageMaker, 
 
+## Addressing Other Scenarios
+As per the project requirements, here are summaries of addressing other scenarios:
+
+**What if:**
+### The data was increased by 100x.
+
+
+### The pipelines would be run on a daily basis by 7 am every day.
+
+
+### The database needed to be accessed by 100+ people.
+
 
 ## Misc
 I used the [Visual Paradigm](https://www.visual-paradigm.com/download/) tool to convert my SQL CREATE statements (DDL statements) into an ERD.  At first I was manually creating the ERD with [wwwsqldesigner](https://github.com/ondras/wwwsqldesigner), but found it tedious to enter everythin by hand.
@@ -112,4 +133,4 @@ I used the [Visual Paradigm](https://www.visual-paradigm.com/download/) tool to 
 
 ## Instructions for running IaC (infrastructure as code)
 
-You first must set up a new user with administrative rights.  Go to the AWS console, then IAM, then Users, and create a new user with "AdministratorAccess".  There may be a way to do this with less than admin rights, however.  Then set the .cfg file from the starter .cfg is the repo.  After downloading the credentials for the admin role, set these as KEY and SECRET in the cfg file.  Then run `ipython` and `create_redshift_cluster.py`.  
+You first must set up a new user with administrative rights.  Go to the AWS console, then IAM, then Users, and create a new user with "AdministratorAccess".  There may be a way to do this with less than admin rights, however.  Then set the .cfg file from the starter .cfg is the repo.  After downloading the credentials for the admin role, set these as KEY and SECRET in the cfg file.  Then run `ipython` and `create_redshift_cluster.py`.  When finished with the cluster, run `delete_cluster.py`.  As long as the config file stays the same, the Redshift cluster identifier will be the same, and you'll be deleting the same cluster you created.
