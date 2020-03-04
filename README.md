@@ -103,6 +103,9 @@ I decided to use [AWS Redshift](https://blog.panoply.io/a-full-comparison-of-red
 ## Addressing Other Scenarios
 As per the project requirements, here are summaries of addressing other scenarios:
 
+### How often to update the data
+Some of these datasets are updated once a year, so this should be updated at least that often or sooner if data sources are updated sooner.
+
 **What if:**
 ### The data was increased by 100x.
 If the amount of data increased 100x, I would still load the data into AWS S3, then use spark to do EDA and ETL into Redshift.  We might also be able to get away with chunking data through pandas, or using other big data tools like dask.
