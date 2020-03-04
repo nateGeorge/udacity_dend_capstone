@@ -192,10 +192,12 @@ class redshift_creator:
         """
         Waits until Redshift cluster status is 'available'.
         """
+        print('waiting for cluster to become available...')
         while True:
             df = self.RedshiftProps()
-            available = (df[df['Key'] == 'ClusterStatus'] == 'available')
+            available = (df[df['Key'] == 'ClusterStatus']['Value'].iloc[0] == 'available')
             if available:
+                print('cluster ready.')
                 break
 
             time.sleep(0.5)
@@ -253,3 +255,8 @@ class redshift_creator:
             self.iam.detach_role_policy(RoleName=self.DWH_IAM_ROLE_NAME,
                         PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
             self.iam.delete_role(RoleName=self.DWH_IAM_ROLE_NAME)
+        
+        # delete config file if exists
+        filepath = os.path.expanduser(os.path.join(self.config_location, self.connection_filename))
+        if os.path.exists(filepath):
+            os.remove(filepath)

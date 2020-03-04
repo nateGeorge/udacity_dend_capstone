@@ -309,7 +309,20 @@ def merge_data(psr, acs, lbnl, eia, read_csv=True, write_csv=True, how='outer'):
     """
     filename = '../data/solar_metrics_data.csv'
     if read_csv and os.path.exists(filename):
-        return pd.read_csv(filename)
+        final_df = pd.read_csv(filename)
+        # columns to convert to nullable integer type
+        cols = ['Installer ID', 
+                'potential_installs',
+                'number_of_panels_total',
+                'occupied_housing_units',
+                'owner_occupied_housing_units',
+                'family_homes',
+                'bachelors_degree_2',
+                'moved_recently']
+        for c in cols:
+            final_df[c] = final_df[c].astype('Int64')
+        
+        return final_df
 
     # eia have most zips, followed by lbnl then acs then psr
     # merge, then make column of zip codes with none missing after each step
@@ -354,8 +367,6 @@ def merge_data(psr, acs, lbnl, eia, read_csv=True, write_csv=True, how='outer'):
     for c in cols:
         final_df[c] = final_df[c].astype('Int64')
 
-    # combine different zip code columns to make one column with no missing values
-    eia_lbnl_acs_psr['full_zip'] = eia_lbnl_acs_psr.apply(fill_zips, axis=1)
     if write_csv:
         final_df.to_csv(filename, index=False)
     
@@ -482,6 +493,10 @@ def insert_data(cur, conn, final_df, zip_df, eia_df, manufacturer_df):
     https://stackoverflow.com/a/56275519/4549682
 
     cur and conn and the curson and connection from the psycopg2 API to the redshift DB.
+    final_df - pandas dataframe with all merged data for main fact table
+    zip_df - pandas dataframe with zipcode location data
+    eia_df - pandas dataframe with EIA-861 report data
+    manufacturer_df - pandas dataframe with solar manufacturer data
     """
     print('inserting solar_metric table data...')
     psycopg2.extras.execute_values(cur, sql_q.solar_metrics_insert, list(final_df.itertuples(index=False, name=None)))
@@ -502,10 +517,14 @@ def insert_data(cur, conn, final_df, zip_df, eia_df, manufacturer_df):
     conn.commit()
 
 
-def write_csvs_to_s3(bucket='dend-capstone-ncg'):
+def write_csvs_to_s3(final_df, zip_df, eia_df, manufacturer_df, bucket='dend-capstone-ncg'):
     """
     Writes pandas dataframes to s3 bucket.
 
+    final_df - pandas dataframe with all merged data for main fact table
+    zip_df - pandas dataframe with zipcode location data
+    eia_df - pandas dataframe with EIA-861 report data
+    manufacturer_df - pandas dataframe with solar manufacturer data
     bucket - string; bucket name
     """
     final_df.to_csv(f's3://{bucket}/final_df.csv', index=False)
@@ -577,8 +596,10 @@ if __name__=='__main__':
     zipcode_data_quality_checks(psr_df, acs_df, lbnl_df, eia_df, zip_df, final_df)
 
     # write data to redshift
+    write_csvs_to_s3(final_df, zip_df, eia_df, manufacturer_df)
+
     conn, cur = make_redshift_connection()
     drop_tables(cur, conn)
     create_tables(cur, conn)
-    write_csvs_to_s3()
+    
     copy_s3_to_redshift(cur, conn)
